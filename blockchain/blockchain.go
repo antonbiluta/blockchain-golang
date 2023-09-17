@@ -3,15 +3,10 @@ package blockchain
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/antonbiluta/blockchain-golang/utils"
 	"github.com/dgraph-io/badger"
 	"os"
 	"runtime"
-)
-
-const (
-	dbPath      = "./tmp/blocks"
-	dbFile      = "./tmp/blocks/MANIFEST"
-	genesisData = "First Transaction from Genesis"
 )
 
 type Blockchain struct {
@@ -25,7 +20,7 @@ type BlockchainIterator struct {
 }
 
 func DBExists() bool {
-	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
+	if _, err := os.Stat(utils.DbFile); os.IsNotExist(err) {
 		return false
 	}
 	return true
@@ -38,19 +33,19 @@ func ContinueBlockchain(address string) *Blockchain {
 	}
 	var lastHash []byte
 	opts := badger.DefaultOptions
-	opts.Dir = dbPath
-	opts.ValueDir = dbPath
+	opts.Dir = utils.DbPath
+	opts.ValueDir = utils.DbPath
 
 	db, err := badger.Open(opts)
-	HandleError(err)
+	utils.HandleError(err)
 
 	err = db.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("lh"))
-		HandleError(err)
+		utils.HandleError(err)
 		lastHash, err = item.Value()
 		return err
 	})
-	HandleError(err)
+	utils.HandleError(err)
 
 	chain := Blockchain{lastHash, db}
 	return &chain
@@ -65,23 +60,23 @@ func InitBlockchain(address string) *Blockchain {
 	}
 
 	opts := badger.DefaultOptions
-	opts.Dir = dbPath
-	opts.ValueDir = dbPath
+	opts.Dir = utils.DbPath
+	opts.ValueDir = utils.DbPath
 
 	db, err := badger.Open(opts)
-	HandleError(err)
+	utils.HandleError(err)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		cbTx := CoinbaseTx(address, genesisData)
+		cbTx := CoinbaseTx(address, utils.GenesisData)
 		genesis := Genesis(cbTx)
 		fmt.Println("Genesis created")
 		err = txn.Set(genesis.Hash, genesis.Serialize())
-		HandleError(err)
+		utils.HandleError(err)
 		err = txn.Set([]byte("lh"), genesis.Hash)
 		lastHash = genesis.Hash
 		return err
 	})
-	HandleError(err)
+	utils.HandleError(err)
 
 	blockchain := Blockchain{lastHash, db}
 
@@ -93,25 +88,25 @@ func (chain *Blockchain) AddBlock(transactions []*Transaction) {
 
 	err := chain.Database.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte("lh"))
-		HandleError(err)
+		utils.HandleError(err)
 		lastHash, err = item.Value()
 
 		return err
 	})
-	HandleError(err)
+	utils.HandleError(err)
 
 	newBlock := CreateBlock(transactions, lastHash)
 
 	err = chain.Database.Update(func(txn *badger.Txn) error {
 		err := txn.Set(newBlock.Hash, newBlock.Serialize())
-		HandleError(err)
+		utils.HandleError(err)
 		err = txn.Set([]byte("lh"), newBlock.Hash)
 
 		chain.LastHash = newBlock.Hash
 
 		return err
 	})
-	HandleError(err)
+	utils.HandleError(err)
 }
 
 func (chain *Blockchain) Iterator() *BlockchainIterator {
@@ -125,12 +120,12 @@ func (iter *BlockchainIterator) Next() *Block {
 
 	err := iter.Database.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(iter.CurrentHash)
-		HandleError(err)
+		utils.HandleError(err)
 		encodedBlock, err := item.Value()
 		block = Deserialize(encodedBlock)
 		return err
 	})
-	HandleError(err)
+	utils.HandleError(err)
 
 	iter.CurrentHash = block.PrevHash
 

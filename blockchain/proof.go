@@ -5,12 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"github.com/antonbiluta/blockchain-golang/utils"
 	"log"
 	"math"
 	"math/big"
 )
-
-const Difficulty = 18 // Потому что мне столько лет
 
 type ProofOfWork struct {
 	Block  *Block
@@ -19,7 +18,7 @@ type ProofOfWork struct {
 
 func NewProof(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
-	target.Lsh(target, uint(256-Difficulty))
+	target.Lsh(target, uint(256-utils.Difficulty))
 
 	pow := &ProofOfWork{b, target}
 
@@ -32,7 +31,7 @@ func (pow *ProofOfWork) InitData(nonce int) []byte {
 			pow.Block.PrevHash,
 			pow.Block.HashTransactions(),
 			ToHex(int64(nonce)),
-			ToHex(int64(Difficulty)),
+			ToHex(int64(utils.Difficulty)),
 		},
 		[]byte{},
 	)

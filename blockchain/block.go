@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
-	"log"
+	"github.com/antonbiluta/blockchain-golang/utils"
 )
 
 type Block struct {
@@ -47,7 +47,7 @@ func (b *Block) Serialize() []byte {
 
 	err := encoder.Encode(b)
 
-	HandleError(err)
+	utils.HandleError(err)
 
 	return res.Bytes()
 }
@@ -59,13 +59,7 @@ func Deserialize(data []byte) *Block {
 
 	err := decoder.Decode(&block)
 
-	HandleError(err)
+	utils.HandleError(err)
 
 	return &block
-}
-
-func HandleError(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
 }

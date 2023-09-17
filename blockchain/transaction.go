@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"github.com/antonbiluta/blockchain-golang/utils"
 	"log"
 )
 
@@ -15,24 +16,13 @@ type Transaction struct {
 	Outputs []TxOutput
 }
 
-type TxInput struct {
-	ID   []byte
-	Out  int
-	Sign string
-}
-
-type TxOutput struct {
-	Value  int
-	PubKey string
-}
-
 func (tx *Transaction) SetID() {
 	var encoded bytes.Buffer
 	var hash [32]byte
 
 	encode := gob.NewEncoder(&encoded)
 	err := encode.Encode(tx)
-	HandleError(err)
+	utils.HandleError(err)
 
 	hash = sha256.Sum256(encoded.Bytes())
 	tx.ID = hash[:]
@@ -64,7 +54,7 @@ func NewTransaction(from, to string, amount int, chain *Blockchain) *Transaction
 
 	for txId, outs := range validOutputs {
 		txID, err := hex.DecodeString(txId)
-		HandleError(err)
+		utils.HandleError(err)
 
 		for _, out := range outs {
 			input := TxInput{txID, out, from}
@@ -86,12 +76,4 @@ func NewTransaction(from, to string, amount int, chain *Blockchain) *Transaction
 
 func (tx *Transaction) IsCoinbase() bool {
 	return len(tx.Inputs) == 1 && len(tx.Inputs[0].ID) == 0 && tx.Inputs[0].Out == -1
-}
-
-func (in *TxInput) CanUnlock(data string) bool {
-	return in.Sign == data
-}
-
-func (out *TxOutput) CanBeUnlocked(data string) bool {
-	return out.PubKey == data
 }
